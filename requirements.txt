@@ -1,0 +1,23 @@
+# Web framework
+flask>=3.0.3
+gunicorn
+
+# LLM
+openai>=1.0.0
+
+# Embeddings
+sentence-transformers>=2.7.0
+
+# Vector store
+# MUST pin 0.5.23 — reasons:
+#   0.6+  has Rust backend that crashes on Databricks Python 3.12
+#   0.4.x uses np.float_ removed in NumPy 2.0
+#   0.5.23 is the stable sweet spot between both problems
+chromadb==0.5.23
+
+# MUST pin below 2.0 — chromadb 0.5.x uses np.float_ internally
+# which was removed in NumPy 2.0
+numpy<2.0
+
+# Environment variables
+python-dotenv
