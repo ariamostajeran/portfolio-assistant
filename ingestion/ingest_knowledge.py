@@ -12,11 +12,11 @@ import argparse
 from pathlib import Path
 from typing import List, Dict
 
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 import chromadb
 
 from config import (
-    CHROMA_PATH, KNOWLEDGE_COLLECTION, EMBEDDING_MODEL,
+    CHROMA_PATH, KNOWLEDGE_COLLECTION,
     KNOWLEDGE_DIR, SKIP_SECTIONS, MIN_CHUNK_LENGTH
 )
 from ingestion.persistence import save_backup, restore_backup
@@ -82,19 +82,18 @@ def chunk_markdown(text: str, source: str) -> List[Dict]:
 
 # ── Embed + store ─────────────────────────────────────────────────────────────
 
-def embed_and_store(chunks: List[Dict], collection, model: SentenceTransformer):
+def embed_and_store(chunks: List[Dict], collection, client: OpenAI):
     if not chunks:
         return
 
     texts   = [c["text"] for c in chunks]
-
-    # Batch encoding — much faster than encoding one by one
-    vectors = model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+    resp    = client.embeddings.create(model="text-embedding-3-small", input=texts)
+    vectors = [item.embedding for item in resp.data]
 
     collection.upsert(
-        ids        = [c["id"]    for c in chunks],
-        embeddings = [v.tolist() for v in vectors],
-        documents  = [c["text"]  for c in chunks],
+        ids        = [c["id"]   for c in chunks],
+        embeddings = vectors,
+        documents  = [c["text"] for c in chunks],
         metadatas  = [{
             "source":  c["source"],
             "section": c["section"],
@@ -114,7 +113,7 @@ def ingest_file(filepath: str, collection=None, model=None) -> int:
     if collection is None:
         collection = get_collection()
     if model is None:
-        model = SentenceTransformer(EMBEDDING_MODEL)
+        model = OpenAI()
 
     filepath = Path(filepath)
     text     = filepath.read_text(encoding="utf-8")
@@ -131,12 +130,12 @@ def ingest_file(filepath: str, collection=None, model=None) -> int:
 def ingest_all(collection=None, model=None):
     """
     Ingest all markdown files found recursively in KNOWLEDGE_DIR.
-    Shares one model instance across all files for efficiency.
+    Shares one OpenAI client across all files for efficiency.
     """
     if collection is None:
         collection = get_collection()
     if model is None:
-        model = SentenceTransformer(EMBEDDING_MODEL)
+        model = OpenAI()
 
     files = list(KNOWLEDGE_DIR.rglob("*.md"))
     print(f"Found {len(files)} markdown files")

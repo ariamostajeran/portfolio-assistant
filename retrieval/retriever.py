@@ -11,7 +11,7 @@ Two collections:
 """
 
 from typing import List, Dict
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 import chromadb
 
 from config import (
@@ -26,8 +26,8 @@ class Retriever:
     def __init__(self):
         restore_backup()
 
-        self.model  = SentenceTransformer(EMBEDDING_MODEL)
-        client      = chromadb.PersistentClient(path=CHROMA_PATH)
+        self._openai = OpenAI()
+        client       = chromadb.PersistentClient(path=CHROMA_PATH)
 
         self.knowledge = client.get_or_create_collection(
             name=KNOWLEDGE_COLLECTION,
@@ -38,9 +38,10 @@ class Retriever:
             metadata={"hnsw:space": "cosine"}
         )
 
-    def _embed(self, text: str) -> List[float]:
-        """Embed a single string. Returns a list (not numpy) for Chroma."""
-        return self.model.encode([text]).tolist()
+    def _embed(self, text: str) -> List[List[float]]:
+        """Embed a single string. Returns [[float...]] as Chroma expects a list of query embeddings."""
+        resp = self._openai.embeddings.create(model="text-embedding-3-small", input=text)
+        return [resp.data[0].embedding]
 
     # ── Tools (called by agent) ───────────────────────────────────────────────
 

@@ -5,9 +5,6 @@ gunicorn
 # LLM
 openai>=1.0.0
 
-# Embeddings
-sentence-transformers>=2.7.0
-
 # Vector store
 # MUST pin 0.5.23 — reasons:
 #   0.6+  has Rust backend that crashes on Databricks Python 3.12

@@ -17,11 +17,11 @@ import tempfile
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from sentence_transformers import SentenceTransformer
+from openai import OpenAI
 import chromadb
 
 from config import (
-    CHROMA_PATH, CODE_COLLECTION, EMBEDDING_MODEL,
+    CHROMA_PATH, CODE_COLLECTION,
     SKIP_DIRS, SKIP_FILES, CODE_EXTENSIONS, MIN_CODE_LINES
 )
 from ingestion.persistence import save_backup, restore_backup
@@ -197,7 +197,7 @@ def ingest_repo(repo_path: str, collection=None, model=None) -> int:
     if collection is None:
         collection = get_collection()
     if model is None:
-        model = SentenceTransformer(EMBEDDING_MODEL)
+        model = OpenAI()
 
     # Clone if GitHub URL provided
     tmp_dir: Optional[tempfile.TemporaryDirectory] = None
@@ -240,12 +240,13 @@ def ingest_repo(repo_path: str, collection=None, model=None) -> int:
 
     print(f"\nEmbedding {len(all_chunks)} chunks...")
     texts   = [c["text"] for c in all_chunks]
-    vectors = model.encode(texts, convert_to_numpy=True, show_progress_bar=True)
+    resp    = model.embeddings.create(model="text-embedding-3-small", input=texts)
+    vectors = [item.embedding for item in resp.data]
 
     collection.upsert(
-        ids        = [c["id"]       for c in all_chunks],
-        embeddings = [v.tolist()    for v in vectors],
-        documents  = [c["text"]     for c in all_chunks],
+        ids        = [c["id"]   for c in all_chunks],
+        embeddings = vectors,
+        documents  = [c["text"] for c in all_chunks],
         metadatas  = [{
             "source":   c["source"],
             "filename": c["filename"],

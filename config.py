@@ -14,8 +14,8 @@ KNOWLEDGE_COLLECTION = "knowledge_base"
 CODE_COLLECTION      = "code_base"
 
 # ── Embedding model ───────────────────────────────────────────────────────────
-EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
-EMBEDDING_DIM   = 384
+EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_DIM   = 1536
 
 # ── LLM ───────────────────────────────────────────────────────────────────────
 # Load from environment variable - set this in your .env file or shell
