@@ -194,13 +194,3 @@ numpy<2.0          # chromadb 0.5.x uses np.float_ removed in NumPy 2.0
 ```
 
 ---
-
-## Roadmap
-
-- [ ] Chat UI frontend (`assistant.html`)
-- [ ] Integrate into main portfolio site (aria-portfolio)
-- [ ] Swap GPT-3.5-turbo for Mistral 7B on Databricks (fully open source)
-- [ ] Add hybrid search (BM25 + vector) for better recall
-- [ ] Streaming responses (SSE) for better UX
-- [ ] Dockerize everything
-- [ ] Evaluation framework (test Q&A pairs, measure retrieval accuracy)
