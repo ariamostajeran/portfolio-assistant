@@ -16,7 +16,7 @@ from openai import OpenAI
 import chromadb
 
 from config import (
-    CHROMA_PATH, KNOWLEDGE_COLLECTION,
+    CHROMA_PATH, KNOWLEDGE_COLLECTION, CODE_COLLECTION,
     KNOWLEDGE_DIR, SKIP_SECTIONS, MIN_CHUNK_LENGTH
 )
 from ingestion.persistence import save_backup, restore_backup
@@ -146,6 +146,60 @@ def ingest_all(collection=None, model=None):
 
     print(f"\nDone — {total} chunks ingested, {collection.count()} total in store")
     save_backup()
+
+
+# ── Full pipeline ─────────────────────────────────────────────────────────────
+
+def ingest_all_with_code(repo_url: str = "https://github.com/ariamostajeran/aria-portfolio"):
+    """
+    Full ingestion pipeline: knowledge files + source code in one call.
+    Saves backup once at the end.
+    """
+    from ingestion.ingest_code import ingest_repo, get_collection as get_code_collection
+
+    client = OpenAI()
+
+    print("=== Step 1: Knowledge files ===")
+    ingest_all(collection=None, model=client)
+
+    print("\n=== Step 2: Source code ===")
+    code_collection = get_code_collection()
+    ingest_repo(repo_url, collection=code_collection, model=client)
+
+    save_backup()
+    print("\n✓ Full ingestion complete — backup saved")
+
+
+# ── Status check ──────────────────────────────────────────────────────────────
+
+def ingestion_status():
+    """Print a summary of what's been ingested in both collections."""
+    restore_backup()
+    client = chromadb.PersistentClient(path=CHROMA_PATH)
+
+    print("── Knowledge base ───────────────────────────────")
+    try:
+        knowledge = client.get_collection(name=KNOWLEDGE_COLLECTION)
+        data      = knowledge.get(include=["metadatas"])
+        sources   = sorted(set(m["source"] for m in data["metadatas"]))
+        print(f"{knowledge.count()} chunks from {len(sources)} files:")
+        for s in sources:
+            count = sum(1 for m in data["metadatas"] if m["source"] == s)
+            print(f"  {s} ({count} chunks)")
+    except Exception:
+        print("  empty or not found")
+
+    print("\n── Code base ────────────────────────────────────")
+    try:
+        code  = client.get_collection(name=CODE_COLLECTION)
+        data  = code.get(include=["metadatas"])
+        files = sorted(set(m["filename"] for m in data["metadatas"]))
+        print(f"{code.count()} chunks from {len(files)} files:")
+        for f in files:
+            count = sum(1 for m in data["metadatas"] if m["filename"] == f)
+            print(f"  {f} ({count} chunks)")
+    except Exception:
+        print("  empty or not found")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────────
