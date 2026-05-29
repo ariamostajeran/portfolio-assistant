@@ -28,7 +28,7 @@ LLM_TEMPERATURE = 0.2
 LLM_MAX_TOKENS  = 1000
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
-SKIP_SECTIONS    = {"links", "contact", "languages", "interests"}
+SKIP_SECTIONS    = {"languages", "interests"}
 MIN_CHUNK_LENGTH = 150
 SKIP_DIRS        = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build"}
 SKIP_FILES       = {"setup.py", "conftest.py"}
