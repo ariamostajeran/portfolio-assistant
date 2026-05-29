@@ -25,7 +25,7 @@ if not OPENAI_API_KEY:
 
 LLM_MODEL       = "gpt-3.5-turbo"
 LLM_TEMPERATURE = 0.2
-LLM_MAX_TOKENS  = 500
+LLM_MAX_TOKENS  = 1000
 
 # ── Chunking ──────────────────────────────────────────────────────────────────
 SKIP_SECTIONS    = {"links", "contact", "languages", "interests"}
