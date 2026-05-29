@@ -21,8 +21,15 @@ bp = Blueprint("assistant", __name__)
 _retriever = Retriever()
 
 
-def _get_agent() -> PortfolioAgent:
-    return PortfolioAgent(retriever=_retriever)
+_agents: dict = {}
+
+def _get_agent(session_id: str) -> PortfolioAgent:
+    global _agents
+    if len(_agents) >= 4:
+        _agents = {}
+    if session_id not in _agents:
+        _agents[session_id] = PortfolioAgent(retriever=_retriever)
+    return _agents[session_id]
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -48,7 +55,7 @@ def chat():
     session_id = session["session_id"]
 
     try:
-        agent  = _get_agent()
+        agent  = _get_agent(session_id)
         answer = agent.chat(message)
         return jsonify({"answer": answer, "session_id": session_id})
     except Exception as e:
