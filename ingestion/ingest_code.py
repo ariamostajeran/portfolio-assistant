@@ -10,6 +10,7 @@ Usage (from portfolio-assistant/ root):
 
 import re
 import ast
+import json
 import hashlib
 import argparse
 import subprocess
@@ -181,9 +182,46 @@ def chunk_js_file(filepath: Path) -> List[Dict]:
     return chunks
 
 
+def chunk_notebook_file(filepath: Path) -> List[Dict]:
+    """Extract code cells from a Jupyter notebook, one chunk per cell."""
+    try:
+        nb = json.loads(filepath.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return []
+
+    chunks = []
+    for i, cell in enumerate(nb.get("cells", [])):
+        if cell.get("cell_type") != "code":
+            continue
+
+        source = cell.get("source", [])
+        code   = "".join(source) if isinstance(source, list) else source
+        code   = code.strip()
+
+        if len(code.splitlines()) < MIN_CODE_LINES:
+            continue
+
+        chunk_id   = hashlib.md5(f"{filepath}::cell_{i}".encode()).hexdigest()
+        embed_text = f"File: {filepath.name}\nNotebook cell {i + 1}:\n\n{code}"
+
+        chunks.append({
+            "id":       chunk_id,
+            "text":     embed_text,
+            "source":   str(filepath),
+            "filename": filepath.name,
+            "name":     f"cell_{i + 1}",
+            "type":     "notebook_cell",
+            "line":     i + 1,
+            "language": "python"
+        })
+
+    return chunks
+
+
 CHUNKERS = {
-    ".py": chunk_python_file,
-    ".js": chunk_js_file,
+    ".py":   chunk_python_file,
+    ".js":   chunk_js_file,
+    ".ipynb": chunk_notebook_file,
 }
 
 

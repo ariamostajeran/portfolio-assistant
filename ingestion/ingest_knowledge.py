@@ -150,10 +150,22 @@ def ingest_all(collection=None, model=None):
 
 # ── Full pipeline ─────────────────────────────────────────────────────────────
 
-def ingest_all_with_code(repo_url: str = "https://github.com/ariamostajeran/aria-portfolio"):
+def extract_github_urls() -> List[str]:
+    """Find all unique GitHub repo URLs across all knowledge markdown files."""
+    pattern = re.compile(r'github\.com/([\w.-]+/[\w.-]+)')
+    urls    = set()
+    for f in KNOWLEDGE_DIR.rglob("*.md"):
+        text = f.read_text(encoding="utf-8")
+        for match in pattern.finditer(text):
+            repo = match.group(1).rstrip('/')
+            urls.add(f"https://github.com/{repo}")
+    return sorted(urls)
+
+
+def ingest_all_with_code():
     """
-    Full ingestion pipeline: knowledge files + source code in one call.
-    Saves backup once at the end.
+    Full ingestion pipeline: knowledge files + all GitHub repos found in
+    knowledge files. Saves backup once at the end.
     """
     from ingestion.ingest_code import ingest_repo, get_collection as get_code_collection
 
@@ -162,9 +174,12 @@ def ingest_all_with_code(repo_url: str = "https://github.com/ariamostajeran/aria
     print("=== Step 1: Knowledge files ===")
     ingest_all(collection=None, model=client)
 
-    print("\n=== Step 2: Source code ===")
-    code_collection = get_code_collection()
-    ingest_repo(repo_url, collection=code_collection, model=client)
+    urls = extract_github_urls()
+    print(f"\n=== Step 2: Source code from {len(urls)} repos ===")
+    for url in urls:
+        print(f"\n── {url}")
+        code_collection = get_code_collection()
+        ingest_repo(url, collection=code_collection, model=client)
 
     save_backup()
     print("\n✓ Full ingestion complete — backup saved")

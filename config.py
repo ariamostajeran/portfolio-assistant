@@ -32,7 +32,7 @@ SKIP_SECTIONS    = {"links", "contact", "languages", "interests"}
 MIN_CHUNK_LENGTH = 150
 SKIP_DIRS        = {".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build"}
 SKIP_FILES       = {"setup.py", "conftest.py"}
-CODE_EXTENSIONS  = {".py", ".js"}
+CODE_EXTENSIONS  = {".py", ".js", ".ipynb"}
 MIN_CODE_LINES   = 3
 
 # ── Retrieval ─────────────────────────────────────────────────────────────────
